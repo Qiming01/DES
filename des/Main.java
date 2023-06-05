@@ -1,7 +1,7 @@
 public class Main {
     public static void main(String[] args) {
         Des des = new Des(2020216774);
-        String inputFile = "/Users/qm/Encryption/test/测试图片.png";
+        String inputFile = "/home/qm/DES/test/测试图片.png";
         String encryptedFile = inputFile.replace(".", "_des_en.");
         String decryptedFile = inputFile.replace(".", "_des_de.");
         des.encryptFile(inputFile, encryptedFile);
