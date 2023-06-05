@@ -2,8 +2,7 @@ import java.util.Vector;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+
 
 public class Des {
     private long Key;
