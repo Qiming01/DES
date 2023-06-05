@@ -1,0 +1,103 @@
+alkjdgkajsfjal
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.Vector;
+
+public class Main {
+    public static void main(String[] args) {
+        String inputFilePath = "path/to/your/input/file";
+        String outputFilePath = "path/to/your/output/file";
+        int bufferSize = 1024; // 缓冲区大小
+
+        Vector<Long> longVector = readFromFile(inputFilePath, bufferSize);
+        writeToFile(outputFilePath, longVector);
+    }
+
+    private static Vector<Long> readFromFile(String filePath, int bufferSize) {
+        Vector<Long> longVector = new Vector<>();
+
+        try (FileInputStream fis = new FileInputStream(filePath);
+             FileChannel channel = fis.getChannel()) {
+            // 创建输入缓冲区
+            ByteBuffer inputBuffer = ByteBuffer.allocate(bufferSize);
+
+            // 读取文件内容到输入缓冲区，直到文件结束
+            while (channel.read(inputBuffer) != -1) {
+                inputBuffer.flip(); // 切换为读模式
+
+                // 将输入缓冲区内容按位分割成长整型数组
+                splitBufferToLongVector(inputBuffer, longVector);
+
+                inputBuffer.clear(); // 清空输入缓冲区，准备下一次读取
+            }
+
+            // 检查最后一组位数是否不足64位，补足0
+            if (inputBuffer.position() % 8 != 0) {
+                int remaining = inputBuffer.remaining();
+                int padding = 8 - remaining % 8;
+
+                for (int i = 0; i < padding; i++) {
+                    inputBuffer.put((byte) 0);
+                }
+
+                inputBuffer.flip(); // 切换为读模式
+                splitBufferToLongVector(inputBuffer, longVector);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return longVector;
+    }
+
+    private static void splitBufferToLongVector(ByteBuffer buffer, Vector<Long> longVector) {
+        int numLongs = buffer.remaining() / 8; // 计算需要的长整型数组长度
+
+        for (int i = 0; i < numLongs; i++) {
+            long num = 0;
+
+            for (int j = 0; j < 8; j++) {
+                num = (num << 8) | (buffer.get() & 0xFF);
+            }
+
+            longVector.add(num);
+        }
+    }
+
+    private static void writeToFile(String filePath, Vector<Long> longVector) {
+        if (longVector != null) {
+            try (FileOutputStream fos = new FileOutputStream(filePath);
+                 FileChannel channel = fos.getChannel()) {
+                // 创建输出缓冲区
+                ByteBuffer outputBuffer = ByteBuffer.allocate(longVector.size() * 8);
+
+                // 将去除多余填充0后的长整型数组合并为输出缓冲区
+                mergeLongVectorToBuffer(longVector, outputBuffer);
+
+                outputBuffer.flip(); // 切换为读模式
+
+                // 将输出缓冲区内容写入文件
+                while (outputBuffer.hasRemaining()) {
+                    channel.write(outputBuffer);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void mergeLongVectorToBuffer(Vector<Long> longVector, ByteBuffer buffer) {
+        for (Long num : longVector) {
+            for (int i = 7; i >= 0; i--) {
+                byte b = (byte) ((num >> (i * 8)) & 0xFF);
+                if (b != 0) {
+                    buffer.put(b);
+                }
+            }
+        }
+    }
+}
